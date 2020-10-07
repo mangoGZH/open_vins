@@ -1,8 +1,8 @@
 <launch>
 
     <!-- mono or stereo and what ros bag to play -->
-    <arg name="max_cameras" default="2" />
-    <arg name="use_stereo"  default="true" />
+    <arg name="max_cameras" default="1" />
+    <arg name="use_stereo"  default="false" />
     <arg name="bag_start"   default="0" /> <!-- v1-2: 0, mh1: 40, mh2: 35, mh3-5: 20 -->
     <arg name="bag"         default="/home/ray/Bag/open_vins/V1_01_easy.bag" />
 
@@ -21,8 +21,8 @@
     <node name="run_subscribe_msckf" pkg="ov_msckf" type="run_subscribe_msckf" output="screen" clear_params="true" required="true">
 
         <!-- bag topics -->
-        <param name="topic_imu"      type="string" value="/imu0" />
-        <param name="topic_camera0"  type="string" value="/cam0/image_raw" />
+        <param name="topic_imu"      type="string" value="/mavros/imu/data" />
+        <param name="topic_camera0"  type="string" value="/camera/color/image_raw" />
         <param name="topic_camera1"  type="string" value="/cam1/image_raw" />
 
         <!-- world/filter parameters -->
@@ -116,9 +116,9 @@
     </node>
 
 
-    <!-- play the dataset -->
+    <!-- play the dataset
     <node pkg="rosbag" type="play" name="rosbag" args="-d 1 -s $(arg bag_start) $(arg bag)" required="true"/>
-
+-->
     <!-- record the trajectory if enabled -->
     <group if="$(arg dosave)">
         <node name="recorder_estimate" pkg="ov_eval" type="pose_to_file" output="screen" required="true">
