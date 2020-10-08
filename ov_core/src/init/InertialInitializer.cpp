@@ -76,9 +76,11 @@ bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<doubl
     }
 
     // Calculate the sample variance for the newest one
+    // 计算IMU加速度方差
     Eigen::Matrix<double,3,1> a_avg = Eigen::Matrix<double,3,1>::Zero();
     for(IMUDATA data : window_newest) {
         a_avg += data.am;
+        //cout<<data.am<<endl;
     }
     a_avg /= (int)window_newest.size();
     double a_var = 0;
@@ -86,9 +88,10 @@ bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<doubl
         a_var += (data.am-a_avg).dot(data.am-a_avg);
     }
     a_var = std::sqrt(a_var/((int)window_newest.size()-1));
-
+    //方差过小
     // If it is below the threshold and we want to wait till we detect a jerk
     if(a_var < _imu_excite_threshold && wait_for_jerk) {
+
         printf(YELLOW "InertialInitializer::initialize_with_imu(): no IMU excitation, below threshold %.4f < %.4f\n" RESET,a_var,_imu_excite_threshold);
         return false;
     }

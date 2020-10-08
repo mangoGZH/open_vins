@@ -129,6 +129,7 @@ int main(int argc, char** argv) {
 void callback_inertial(const sensor_msgs::Imu::ConstPtr& msg) {
 
     // convert into correct format
+    //ROS_INFO("Receive imu callback!");
     double timem = msg->header.stamp.toSec();
     Eigen::Vector3d wm, am;
     wm << msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z;
@@ -146,6 +147,7 @@ void callback_monocular(const sensor_msgs::ImageConstPtr& msg0) {
 
 
     // Get the image
+    //ROS_INFO("Receive monocular callback!");
     cv_bridge::CvImageConstPtr cv_ptr;
     try {
         cv_ptr = cv_bridge::toCvShare(msg0, sensor_msgs::image_encodings::MONO8);

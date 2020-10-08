@@ -8,7 +8,7 @@
 
     <!-- imu starting thresholds -->
     <arg name="init_window_time"  default="0.75" />
-    <arg name="init_imu_thresh"   default="1.5" />
+    <arg name="init_imu_thresh"   default="0.5" />
 
     <!-- saving trajectory path and timing information -->
     <arg name="dosave"      default="false" />
@@ -16,12 +16,19 @@
     <arg name="path_est"    default="/tmp/traj_estimate.txt" />
     <arg name="path_time"   default="/tmp/traj_timing.txt" />
 
+    <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find ov_msckf)/launch/display_gazebo.rviz" />
 
+    <node pkg="tf" type="static_transform_publisher" name="tf_global_local_origin"
+          args="0 0 0 0 0 0 global local_origin 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="tf_fcu_base"
+          args="0 0 0 0 0 0 fcu base_link 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="tf_depth_camera"
+          args="0.1 0 0 -1.57 0 -1.57 base_link camera_link 100"/>
     <!-- MASTER NODE! -->
     <node name="run_subscribe_msckf" pkg="ov_msckf" type="run_subscribe_msckf" output="screen" clear_params="true" required="true">
 
         <!-- bag topics -->
-        <param name="topic_imu"      type="string" value="/mavros/imu/data" />
+        <param name="topic_imu"      type="string" value="/mavros/imu/data_raw" />
         <param name="topic_camera0"  type="string" value="/camera/color/image_raw" />
         <param name="topic_camera1"  type="string" value="/cam1/image_raw" />
 
@@ -85,30 +92,30 @@
         <param name="accelerometer_random_walk"    type="double"   value="3.0000e-3" />
 
         <!-- camera intrinsics -->
-        <rosparam param="cam0_wh">[752, 480]</rosparam>
-        <rosparam param="cam1_wh">[752, 480]</rosparam>
+        <rosparam param="cam0_wh">[640, 480]</rosparam>
+        <rosparam param="cam1_wh">[640, 480]</rosparam>
         <param name="cam0_is_fisheye" type="bool" value="false" />
         <param name="cam1_is_fisheye" type="bool" value="false" />
-        <rosparam param="cam0_k">[458.654,457.296,367.215,248.375]</rosparam>
-        <rosparam param="cam0_d">[-0.28340811,0.07395907,0.00019359,1.76187114e-05]</rosparam>
+        <rosparam param="cam0_k">[450,450,320,240]</rosparam>
+        <rosparam param="cam0_d">[0,0,0,0]</rosparam>
         <rosparam param="cam1_k">[457.587,456.134,379.999,255.238]</rosparam>
         <rosparam param="cam1_d">[-0.28368365,0.07451284,-0.00010473,-3.55590700e-05]</rosparam>
 
         <!-- camera extrinsics -->
         <rosparam param="T_C0toI">
             [
-            0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
-            0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
-            -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
-            0.0, 0.0, 0.0, 1.0
+             0, 0, 1,  0.10,
+             -1, 0, 0,  0.00,
+             0, -1, 0,  0.00,
+             0, 0, 0,  1.00
             ]
         </rosparam>
         <rosparam param="T_C1toI">
             [
-            0.0125552670891, -0.999755099723, 0.0182237714554, -0.0198435579556,
-            0.999598781151, 0.0130119051815, 0.0251588363115, 0.0453689425024,
-            -0.0253898008918, 0.0179005838253, 0.999517347078, 0.00786212447038,
-            0.0, 0.0, 0.0, 1.0
+             0, -1, 0,  0.00,
+             1, 0, 0,  0.00,
+             0, 0, 1,  0.00,
+             0, 0, 0,  1.00
             ]
         </rosparam>
 
