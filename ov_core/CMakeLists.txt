@@ -7,15 +7,22 @@ project(ov_core)
 find_package(catkin QUIET COMPONENTS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge)
 
 # Include libraries
+# 设置opencv3路径
+set(OpenCV_DIR "/home/gzh/lib/opencv/build")
+
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV 3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem thread date_time)
-
+set(EIGEN3_INCLUDE_DIR "/usr/include/eigen3")
 # display message to user
 message(STATUS "EIGEN VERSION: " ${EIGEN3_VERSION})
-message(STATUS "OPENCV VERSION: " ${OpenCV_VERSION})
+message(STATUS "    libraries: ${EIGEN3_LIBS}")
+message(STATUS "    include path: ${EIGEN3_INCLUDE_DIR}")
 message(STATUS "BOOST VERSION: " ${Boost_VERSION})
-
+message(STATUS "OpenCV library status:")
+message(STATUS "    version: ${OpenCV_VERSION}")
+message(STATUS "    libraries: ${OpenCV_LIBS}")
+message(STATUS "    include path: ${OpenCV_INCLUDE_DIRS}")
 # Describe catkin project
 if (catkin_FOUND)
     add_definitions(-DROS_AVAILABLE=1)

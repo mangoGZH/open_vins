@@ -5,7 +5,7 @@ project(ov_msckf)
 
 # Include our cmake files
 #set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/)
-
+set(OpenCV_DIR /home/gzh/lib/opencv/build)
 # Find catkin (the ROS build system)
 find_package(catkin QUIET COMPONENTS roscpp rosbag tf std_msgs geometry_msgs sensor_msgs nav_msgs visualization_msgs cv_bridge ov_core)
 
@@ -13,7 +13,7 @@ find_package(catkin QUIET COMPONENTS roscpp rosbag tf std_msgs geometry_msgs sen
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV 3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem thread date_time)
-
+set(EIGEN3_INCLUDE_DIR "/usr/include/eigen3")
 # display message to user
 message(STATUS "EIGEN VERSION: " ${EIGEN3_VERSION})
 message(STATUS "OPENCV VERSION: " ${OpenCV_VERSION})
