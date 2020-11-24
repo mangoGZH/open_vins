@@ -4,7 +4,7 @@
     <arg name="max_cameras" default="2" />
     <arg name="use_stereo"  default="true" />
     <arg name="bag_start"   default="0" /> <!-- v1-2: 0, mh1: 40, mh2: 35, mh3-5: 20 -->
-    <arg name="bag"         default="/home/ray/Bag/open_vins/V1_01_easy.bag" />
+    <arg name="bag"         default="/home/gzh/datasets/EuRoc/V1_01_easy.bag" />
 
     <!-- imu starting thresholds -->
     <arg name="init_window_time"  default="0.75" />
@@ -16,6 +16,7 @@
     <arg name="path_est"    default="/tmp/traj_estimate.txt" />
     <arg name="path_time"   default="/tmp/traj_timing.txt" />
 
+    <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find ov_msckf)/launch/display.rviz" />
 
     <!-- MASTER NODE! -->
     <node name="run_subscribe_msckf" pkg="ov_msckf" type="run_subscribe_msckf" output="screen" clear_params="true" required="true">
