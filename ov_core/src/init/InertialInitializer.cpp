@@ -50,15 +50,17 @@ void InertialInitializer::feed_imu(double timestamp, Eigen::Matrix<double,3,1> w
 bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<double,4,1> &q_GtoI0, Eigen::Matrix<double,3,1> &b_w0,
                                               Eigen::Matrix<double,3,1> &v_I0inG, Eigen::Matrix<double,3,1> &b_a0, Eigen::Matrix<double,3,1> &p_I0inG, bool wait_for_jerk) {
 
-    // Return if we don't have any measurements
+    // 若无imu测量值，则返回
     if(imu_data.empty()) {
         return false;
     }
 
-    // Newest imu timestamp
+    // 最新的imu数据时间
     double newesttime = imu_data.at(imu_data.size()-1).timestamp;
 
     // First lets collect a window of IMU readings from the newest measurement to the oldest
+    // _window_length 是launch中设定的ｉｍｕ初始化窗口的采用时间：0.5~2s
+    // 取最近两段时间内的ｉｍｕ数据进行用于初始化
     std::vector<IMUDATA> window_newest, window_secondnew;
     for(IMUDATA data : imu_data) {
         if(data.timestamp > newesttime-1*_window_length && data.timestamp <= newesttime-0*_window_length) {
@@ -88,9 +90,12 @@ bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<doubl
         a_var += (data.am-a_avg).dot(data.am-a_avg);
     }
     a_var = std::sqrt(a_var/((int)window_newest.size()-1));
-    //方差过小
+    cout << "initialize_with_imu :a_var= " << a_var << endl;
+
+    // 方差过小
+    // _imu_excite_threshold　是launch中设定的判断ｉｍｕ激励的阈值，高于阈值则表示运动，低于阈值为静止
     // If it is below the threshold and we want to wait till we detect a jerk
-    if(a_var < _imu_excite_threshold && wait_for_jerk) {
+    if(a_var < _imu_excite_threshold && wait_for_jerk) { 
 
         printf(YELLOW "InertialInitializer::initialize_with_imu(): no IMU excitation, below threshold %.4f < %.4f\n" RESET,a_var,_imu_excite_threshold);
         return false;
@@ -101,7 +106,7 @@ bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<doubl
     //    return false;
     //}
 
-    // Sum up our current accelerations and velocities
+    // 计算平均加速度和平均角速度 
     Eigen::Vector3d linsum = Eigen::Vector3d::Zero();
     Eigen::Vector3d angsum = Eigen::Vector3d::Zero();
     for(size_t i=0; i<window_secondnew.size(); i++) {
@@ -116,23 +121,26 @@ bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<doubl
     angavg = angsum/window_secondnew.size();
 
 
-    // Calculate variance of the
+    // 计算最近第二个窗口内IMU加速度方差
     double a_var2 = 0;
     for(IMUDATA data : window_secondnew) {
         a_var2 += (data.am-linavg).dot(data.am-linavg);
     }
     a_var2 = std::sqrt(a_var2/((int)window_secondnew.size()-1));
 
+    cout<< "initialize_with_imu :a_var2= " << a_var2 << endl;
     // If it is above the threshold and we are not waiting for a jerk
     // Then we are not stationary (i.e. moving) so we should wait till we are
+    // 若两个窗口的加速度方差都超过了临界值，且不等待一个激励，那么当前状态是移动的，需要等到运动静止哦！
     if((a_var > _imu_excite_threshold || a_var2 > _imu_excite_threshold) && !wait_for_jerk) {
         printf(YELLOW "InertialInitializer::initialize_with_imu(): to much IMU excitation, above threshold %.4f,%.4f > %.4f\n" RESET,a_var,a_var2,_imu_excite_threshold);
         return false;
     }
 
-
+    
     // Get z axis, which alines with -g (z_in_G=0,0,1)
     Eigen::Vector3d z_axis = linavg/linavg.norm();
+cout<< "initialize_with_imu :z_axis= " << z_axis << endl;
 
     // Create an x_axis
     Eigen::Vector3d e_1(1,0,0);
@@ -140,9 +148,11 @@ bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<doubl
     // Make x_axis perpendicular to z
     Eigen::Vector3d x_axis = e_1-z_axis*z_axis.transpose()*e_1;
     x_axis= x_axis/x_axis.norm();
+cout<< "initialize_with_imu :x_axis= " << x_axis << endl;
 
-    // Get z from the cross product of these two
+    // Get z from the cross product of these two　　y轴方向可由x轴和z轴叉乘得到
     Eigen::Matrix<double,3,1> y_axis = skew_x(z_axis)*x_axis;
+cout<< "initialize_with_imu :y_axis= " << y_axis << endl;
 
     // From these axes get rotation
     Eigen::Matrix<double,3,3> Ro;

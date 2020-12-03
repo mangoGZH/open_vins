@@ -73,7 +73,7 @@ void TrackKLT::feed_monocular(double timestamp, cv::Mat &img, size_t cam_id) {
     //===================================================================================
     //===================================================================================
 
-    // If any of our mask is empty, that means we didn't have enough to do ransac, so just return
+    // If any of our mask is empty, that means we didn't have enough to do ransac, so just return　
     if(mask_ll.empty()) {
         img_last[cam_id] = img.clone();
         img_pyramid_last[cam_id] = imgpyr;
@@ -139,14 +139,14 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     std::unique_lock<std::mutex> lck1(mtx_feeds.at(cam_id_left));
     std::unique_lock<std::mutex> lck2(mtx_feeds.at(cam_id_right));
 
-    // Histogram equalize
+    // 1. Histogram equalize 均值化直方图　提高对比度
     cv::Mat img_left, img_right;
     boost::thread t_lhe = boost::thread(cv::equalizeHist, boost::cref(img_leftin), boost::ref(img_left));
     boost::thread t_rhe = boost::thread(cv::equalizeHist, boost::cref(img_rightin), boost::ref(img_right));
     t_lhe.join();
     t_rhe.join();
 
-    // Extract image pyramids (boost seems to require us to put all the arguments even if there are defaults....)
+    // 2. 提取图像金字塔 Extract image pyramids (boost seems to require us to put all the arguments even if there are defaults....)
     std::vector<cv::Mat> imgpyr_left, imgpyr_right;
     boost::thread t_lp = boost::thread(cv::buildOpticalFlowPyramid, boost::cref(img_left),
                                        boost::ref(imgpyr_left), boost::ref(win_size), boost::ref(pyr_levels), false,
@@ -160,6 +160,7 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
 
     // If we didn't have any successful tracks last time, just extract this time
     // This also handles, the tracking initalization on the first call to this extractor
+    // 3.1 若当前帧是第一帧（或跟踪丢失），初始化光流跟踪
     if(pts_last[cam_id_left].empty() || pts_last[cam_id_right].empty()) {
         // Track into the new image
         perform_detection_stereo(imgpyr_left, imgpyr_right, pts_last[cam_id_left], pts_last[cam_id_right], ids_last[cam_id_left], ids_last[cam_id_right]);
@@ -171,6 +172,7 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
         return;
     }
 
+    // 3.2 若当前帧不是第一帧，进入正常的klt跟踪流程（保证上一帧具有足够多的特征点用于当前帧的klt跟踪）
     // First we should make that the last images have enough features so we can do KLT
     // This will "top-off" our number of tracks so always have a constant number
     perform_detection_stereo(img_pyramid_last[cam_id_left], img_pyramid_last[cam_id_right],
@@ -187,7 +189,7 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     std::vector<cv::KeyPoint> pts_left_new = pts_last[cam_id_left];
     std::vector<cv::KeyPoint> pts_right_new = pts_last[cam_id_right];
 
-    // Lets track temporally
+    // 4. 前后帧KLT跟踪　Ransac剔除错误匹配 （通过上帧图像特征点得到当前图像特帧点）
     boost::thread t_ll = boost::thread(&TrackKLT::perform_matching, this, boost::cref(img_pyramid_last[cam_id_left]), boost::cref(imgpyr_left),
                                        boost::ref(pts_last[cam_id_left]), boost::ref(pts_left_new), cam_id_left, cam_id_left, boost::ref(mask_ll));
     boost::thread t_rr = boost::thread(&TrackKLT::perform_matching, this, boost::cref(img_pyramid_last[cam_id_right]), boost::cref(imgpyr_right),
@@ -203,17 +205,20 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     //===================================================================================
 
 
-    // left to right matching
+    // 5. 左右图像KLT跟踪　Ransac剔除错误匹配　left to right matching
     // TODO: we should probably still do this to reject outliers
     // TODO: maybe we should collect all tracks that are in both frames and make they pass this?
-    //std::vector<uchar> mask_lr;
-    //perform_matching(imgpyr_left, imgpyr_right, pts_left_new, pts_right_new, cam_id_left, cam_id_right, mask_lr);
+    // std::vector<uchar> mask_lr;
+    // perform_matching(imgpyr_left, imgpyr_right, pts_left_new, pts_right_new, cam_id_left, cam_id_right, mask_lr);
     rT5 =  boost::posix_time::microsec_clock::local_time();
 
 
     //===================================================================================
     //===================================================================================
 
+    // （6）. 若跟踪失败则重新开始
+    //（也就是说msckf 遇到快速运动，纹理较少的时候特征点没有连续跟踪也无所谓，
+    // 丢失的点会参与更新IMU运动学方程，而下一帧新加入的点再重新进行跟踪，只是IMU的估计误差会大一些）
     // If any of our masks are empty, that means we didn't have enough to do ransac, so just return
     if(mask_ll.empty() || mask_rr.empty()) {
         img_last[cam_id_left] = img_left.clone();
@@ -247,9 +252,11 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
                 break;
             }
         }
+
+        // 6.保留当前左右图像中同时被跟踪的pts 存储跟踪较好的点
         // If it is a good track, and also tracked from left to right
         // Else track it as a mono feature in just the left image
-        if(mask_ll[i] && found_right && mask_rr[index_right]) {
+        if(mask_ll[i] && found_right && mask_rr[index_right]) {　　　// 双目
             // Ensure we do not have any bad KLT tracks (i.e., points are negative)
             if(pts_right_new.at(index_right).pt.x < 0 || pts_right_new.at(index_right).pt.y < 0 || (int)pts_right_new[i].pt.x > img_right.cols || (int)pts_right_new[i].pt.y > img_right.rows)
                 continue;
@@ -258,7 +265,7 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
             good_ids_left.push_back(ids_last[cam_id_left].at(i));
             good_ids_right.push_back(ids_last[cam_id_right].at(index_right));
             //std::cout << "adding to stereo - " << ids_last[cam_id_left].at(i) << " , " << ids_last[cam_id_right].at(index_right) << std::endl;
-        } else if(mask_ll[i]) {
+        } else if(mask_ll[i]) {　// 单目
             good_left.push_back(pts_left_new.at(i));
             good_ids_left.push_back(ids_last[cam_id_left].at(i));
             //std::cout << "adding to left - " << ids_last[cam_id_left].at(i) << std::endl;
@@ -283,6 +290,7 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     //===================================================================================
     //===================================================================================
 
+    // 7. 更新相机特征点坐标，包括畸变前后的坐标，和时间戳
     // Update our feature database, with theses new observations
     for(size_t i=0; i<good_left.size(); i++) {
         cv::Point2f npt_l = undistort_point(good_left.at(i).pt, cam_id_left);
@@ -309,12 +317,12 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     rT6 =  boost::posix_time::microsec_clock::local_time();
 
     // Timing information
-    //printf("[TIME-KLT]: %.4f seconds for pyramid\n",(rT2-rT1).total_microseconds() * 1e-6);
-    //printf("[TIME-KLT]: %.4f seconds for detection\n",(rT3-rT2).total_microseconds() * 1e-6);
-    //printf("[TIME-KLT]: %.4f seconds for temporal klt\n",(rT4-rT3).total_microseconds() * 1e-6);
-    //printf("[TIME-KLT]: %.4f seconds for stereo klt\n",(rT5-rT4).total_microseconds() * 1e-6);
-    //printf("[TIME-KLT]: %.4f seconds for feature DB update (%d features)\n",(rT6-rT5).total_microseconds() * 1e-6, (int)good_left.size());
-    //printf("[TIME-KLT]: %.4f seconds for total\n",(rT6-rT1).total_microseconds() * 1e-6);
+    printf("[TIME-KLT]: %.4f seconds for pyramid\n",(rT2-rT1).total_microseconds() * 1e-6);
+    printf("[TIME-KLT]: %.4f seconds for detection\n",(rT3-rT2).total_microseconds() * 1e-6);
+    printf("[TIME-KLT]: %.4f seconds for temporal klt\n",(rT4-rT3).total_microseconds() * 1e-6);
+    printf("[TIME-KLT]: %.4f seconds for stereo klt\n",(rT5-rT4).total_microseconds() * 1e-6);
+    printf("[TIME-KLT]: %.4f seconds for feature DB update (%d features)\n",(rT6-rT5).total_microseconds() * 1e-6, (int)good_left.size());
+    printf("[TIME-KLT]: %.4f seconds for total\n",(rT6-rT1).total_microseconds() * 1e-6);
 
 }
 
@@ -380,16 +388,18 @@ void TrackKLT::perform_detection_monocular(const std::vector<cv::Mat> &img0pyr, 
 
 }
 
+// 特征点跟踪的补点模块
+// 先在左边相机提取的角点，然后用光流法找右相机上的匹配的特征点，返回左右相机配对的特征点。
+// 前提是两个相机的基线不能太大，否则光流法的窗口大小参数需要调整。
 
 void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, const std::vector<cv::Mat> &img1pyr,
                                         std::vector<cv::KeyPoint> &pts0, std::vector<cv::KeyPoint> &pts1,
                                         std::vector<size_t> &ids0, std::vector<size_t> &ids1) {
-
-    // Create a 2D occupancy grid for this current image
-    // Note that we scale this down, so that each grid point is equal to a set of pixels
-    // This means that we will reject points that less then grid_px_size points away then existing features
-    // TODO: figure out why I need to add the windowsize of the klt to handle features that are outside the image bound
-    // TODO: I assume this is because klt of features at the corners is not really well defined, thus if it doesn't get a match it will be out-of-bounds
+    // 1. 将图像划分成Grid，每个子grid中只有一个特征点
+    // Create a 2D occupancy grid for this current image　　当前图像创建二维占用栅格
+    // Note that we scale this down, so that each grid point is equal to a set of pixels　
+    // This means that we will reject points that less then grid_px_size points away then existing features　小于网格像素大小的点将被忽略
+    // min_px_dist在euroc数据集下是10个像素，640x480分辨率的整幅图一共有64x48个grid，每个子grid中只有一个特征点
     Eigen::MatrixXi grid_2d_0 = Eigen::MatrixXi::Zero((int)(img0pyr.at(0).rows/min_px_dist)+15, (int)(img0pyr.at(0).cols/min_px_dist)+15);
     Eigen::MatrixXi grid_2d_1 = Eigen::MatrixXi::Zero((int)(img1pyr.at(0).rows/min_px_dist)+15, (int)(img1pyr.at(0).cols/min_px_dist)+15);
     auto it0 = pts0.begin();
@@ -397,13 +407,13 @@ void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, con
     while(it0 != pts0.end()) {
         // Get current left keypoint
         cv::KeyPoint kpt = *it0;
-        // Check if this keypoint is near another point
+        // Check if this keypoint is near another point　标记已被特征点占用的栅格
         if(grid_2d_0((int)(kpt.pt.y/min_px_dist),(int)(kpt.pt.x/min_px_dist)) == 1) {
             it0 = pts0.erase(it0);
             it1 = ids0.erase(it1);
             continue;
         }
-        // Else we are good, move forward to the next point
+        // Else we are good, move forward to the next point  设置grid被占用
         grid_2d_0((int)(kpt.pt.y/min_px_dist),(int)(kpt.pt.x/min_px_dist)) = 1;
         it0++;
         it1++;
@@ -425,7 +435,8 @@ void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, con
         it1++;
     }
 
-    // First compute how many more features we need to extract from this image
+    // 2. 只在金字塔的第一层图像提取FAST特征点，总数不超过num_features ，通常400-500个点
+    // First compute how many more features we need to extract from this image 需要提取的特帧点数量
     int num_featsneeded_0 = num_features - (int)pts0.size();
 
     // LEFT: if we need features we should extract them in the current frame
@@ -433,11 +444,12 @@ void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, con
     // LEFT: in the case that we have two features that are the same, then we should merge them
     if(num_featsneeded_0 > 1) {
 
-        // Extract our features (use fast with griding)
+        // 左图像网格化提取金字塔fast角点　
+        // 通常fast特征点的 grid_x=10 , grid_y =8，threshold=10
         std::vector<cv::KeyPoint> pts0_ext;
         Grider_FAST::perform_griding(img0pyr.at(0), pts0_ext, num_featsneeded_0, grid_x, grid_y, threshold, true);
-
-        // Now, reject features that are close a current feature
+         
+        // 3. 在新检测出来的特征点的基础上，在原有grid的基础上增加新的未被占用的特征点
         std::vector<cv::KeyPoint> kpts0_new;
         std::vector<cv::Point2f> pts0_new;
         for(auto& kpt : pts0_ext) {
@@ -458,9 +470,10 @@ void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, con
         pts1_new = pts0_new;
 
         // If we have points, do KLT tracking to get the valid projections
+        // 4. 金字塔光流跟踪 由左图角点，得到右图的角点
         if(!pts0_new.empty()) {
 
-            // Do our KLT tracking from the left to the right frame of reference
+            // Do our KLT tracking from the left to the right frame of reference　参数win_size = cv::Size(15, 15);
             // Note: we have a pretty big window size here since our projection might be bad
             // Note: but this might cause failure in cases of repeated textures (eg. checkerboard)
             std::vector<uchar> mask;
@@ -468,7 +481,7 @@ void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, con
             cv::TermCriteria term_crit = cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 15, 0.01);
             cv::calcOpticalFlowPyrLK(img0pyr, img1pyr, pts0_new, pts1_new, mask, error, win_size, pyr_levels, term_crit, cv::OPTFLOW_USE_INITIAL_FLOW);
 
-            // Loop through and record only ones that are valid
+            // 5． 拷贝跟踪成功的点　Loop through and record only ones that are valid
             for(size_t i=0; i<pts0_new.size(); i++) {
 
                 // Check that our tracks are in bounds
@@ -495,7 +508,7 @@ void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, con
                     // append the new uv coordinate
                     pts0.push_back(kpts0_new.at(i));
                     // move id forward and append this new point
-                    size_t temp = ++currid;
+                    size_t temp = ++currid;  // 这个是特征点唯一的ID，不断累计
                     ids0.push_back(temp);
                 }
             }
@@ -536,7 +549,7 @@ void TrackKLT::perform_matching(const std::vector<cv::Mat>& img0pyr, const std::
                                 size_t id0, size_t id1,
                                 std::vector<uchar>& mask_out) {
 
-    // We must have equal vectors
+    // 1 保持前后帧特征点数一致 We must have equal vectors
     assert(kpts0.size() == kpts1.size());
 
     // Return if we don't have any points
@@ -558,13 +571,13 @@ void TrackKLT::perform_matching(const std::vector<cv::Mat>& img0pyr, const std::
         return;
     }
 
-    // Now do KLT tracking to get the valid new points
+    // 2 光流法跟踪特征点的新位置 Now do KLT tracking to get the valid new points
     std::vector<uchar> mask_klt;
     std::vector<float> error;
     cv::TermCriteria term_crit = cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 15, 0.01);
     cv::calcOpticalFlowPyrLK(img0pyr, img1pyr, pts0, pts1, mask_klt, error, win_size, pyr_levels, term_crit, cv::OPTFLOW_USE_INITIAL_FLOW);
 
-
+    // 3 特征点归一化以及去畸变 (为RANSAC做准备)
     // Normalize these points, so we can then do ransac
     // We don't want to do ransac on distorted image uvs since the mapping is nonlinear
     std::vector<cv::Point2f> pts0_n, pts1_n;
@@ -573,20 +586,20 @@ void TrackKLT::perform_matching(const std::vector<cv::Mat>& img0pyr, const std::
         pts1_n.push_back(undistort_point(pts1.at(i),id1));
     }
 
-    // Do RANSAC outlier rejection (note since we normalized the max pixel error is now in the normalized cords)
+    // 4 Ransac的基本矩阵方法剔除错误跟踪的点集 (note since we normalized the max pixel error is now in the normalized cords)
     std::vector<uchar> mask_rsc;
     double max_focallength_img0 = std::max(camera_k_OPENCV.at(id0)(0,0),camera_k_OPENCV.at(id0)(1,1));
     double max_focallength_img1 = std::max(camera_k_OPENCV.at(id1)(0,0),camera_k_OPENCV.at(id1)(1,1));
     double max_focallength = std::max(max_focallength_img0,max_focallength_img1);
     cv::findFundamentalMat(pts0_n, pts1_n, cv::FM_RANSAC, 1/max_focallength, 0.999, mask_rsc);
 
-    // Loop through and record only ones that are valid
+    // 用光流和Ransac的方法剔除错误跟踪的点，成功的设置mask=1 
     for(size_t i=0; i<mask_klt.size(); i++) {
         auto mask = (uchar)((i < mask_klt.size() && mask_klt[i] && i < mask_rsc.size() && mask_rsc[i])? 1 : 0);
         mask_out.push_back(mask);
     }
 
-    // Copy back the updated positions
+    // 5 更新光流法得到当前帧特征点位置  Copy back the updated positions
     for(size_t i=0; i<pts0.size(); i++) {
         kpts0.at(i).pt = pts0.at(i);
         kpts1.at(i).pt = pts1.at(i);

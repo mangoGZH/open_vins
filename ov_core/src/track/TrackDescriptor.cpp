@@ -148,12 +148,12 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
     std::unique_lock<std::mutex> lck1(mtx_feeds.at(cam_id_left));
     std::unique_lock<std::mutex> lck2(mtx_feeds.at(cam_id_right));
 
-    // Histogram equalize
+    // 1. Histogram equalize 均值化直方图　提高对比度
     cv::Mat img_left, img_right;
     cv::equalizeHist(img_leftin, img_left);
     cv::equalizeHist(img_rightin, img_right);
 
-    // If we are the first frame (or have lost tracking), initialize our descriptors
+    // 2.1 若当前帧是第一帧（或跟踪丢失），初始化特征点与描述符
     if(pts_last[cam_id_left].empty() || pts_last[cam_id_right].empty()) {
         perform_detection_stereo(img_left, img_right,
                                  pts_last[cam_id_left], pts_last[cam_id_right],
@@ -165,6 +165,7 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
         return;
     }
 
+    // 2.2 若当前帧不是第一帧，进入正常的特征匹配与跟踪流程
     // Our new keypoints and descriptor for the new image
     std::vector<cv::KeyPoint> pts_left_new, pts_right_new;
     cv::Mat desc_left_new, desc_right_new;
@@ -183,7 +184,7 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
     // Our matches temporally
     std::vector<cv::DMatch> matches_ll, matches_rr;
 
-    // Lets match temporally
+    // 3. 左右图像分别进行 < 前后帧匹配 >
     boost::thread t_ll = boost::thread(&TrackDescriptor::robust_match, this, boost::ref(pts_last[cam_id_left]), boost::ref(pts_left_new),
                                        boost::ref(desc_last[cam_id_left]), boost::ref(desc_left_new), cam_id_left, cam_id_left, boost::ref(matches_ll));
     boost::thread t_rr = boost::thread(&TrackDescriptor::robust_match, this, boost::ref(pts_last[cam_id_right]), boost::ref(pts_right_new),
@@ -198,7 +199,7 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
     //===================================================================================
     //===================================================================================
 
-    // Get our "good tracks"
+    // 4. 保留当前左右图像同时跟踪到的点
     std::vector<cv::KeyPoint> good_left, good_right;
     std::vector<size_t> good_ids_left, good_ids_right;
     cv::Mat good_desc_left, good_desc_right;
@@ -260,7 +261,7 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
     //===================================================================================
 
 
-    // Update our feature database, with theses new observations
+    // 5. 更新相机特征点坐标(畸变前后的坐标)和时间戳  Update our feature database, with theses new observations
     for(size_t i=0; i<good_left.size(); i++) {
         // Assert that our IDs are the same
         assert(good_ids_left.at(i)==good_ids_right.at(i));
@@ -282,7 +283,7 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
     //       (int)matches_rr.size(),(int)ids_left_new.size(),(int)good_left.size(),num_tracklast);
 
 
-    // Move forward in time
+    // 更新last帧信息，用于下一帧跟踪 Move forward in time
     img_last[cam_id_left] = img_left.clone();
     img_last[cam_id_right] = img_right.clone();
     pts_last[cam_id_left] = good_left;
