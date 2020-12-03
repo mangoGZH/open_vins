@@ -256,7 +256,7 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
         // 6.保留当前左右图像中同时被跟踪的pts 存储跟踪较好的点
         // If it is a good track, and also tracked from left to right
         // Else track it as a mono feature in just the left image
-        if(mask_ll[i] && found_right && mask_rr[index_right]) {　　　// 双目
+        if(mask_ll[i] && found_right && mask_rr[index_right]) {// 双目
             // Ensure we do not have any bad KLT tracks (i.e., points are negative)
             if(pts_right_new.at(index_right).pt.x < 0 || pts_right_new.at(index_right).pt.y < 0 || (int)pts_right_new[i].pt.x > img_right.cols || (int)pts_right_new[i].pt.y > img_right.rows)
                 continue;
@@ -265,7 +265,7 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
             good_ids_left.push_back(ids_last[cam_id_left].at(i));
             good_ids_right.push_back(ids_last[cam_id_right].at(index_right));
             //std::cout << "adding to stereo - " << ids_last[cam_id_left].at(i) << " , " << ids_last[cam_id_right].at(index_right) << std::endl;
-        } else if(mask_ll[i]) {　// 单目
+        } else if(mask_ll[i]) {// 单目
             good_left.push_back(pts_left_new.at(i));
             good_ids_left.push_back(ids_last[cam_id_left].at(i));
             //std::cout << "adding to left - " << ids_last[cam_id_left].at(i) << std::endl;

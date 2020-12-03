@@ -11,10 +11,10 @@
     <arg name="init_imu_thresh"   default="0.5" />
 
     <!-- saving trajectory path and timing information -->
-    <arg name="dosave"      default="false" />
-    <arg name="dotime"      default="false" />
-    <arg name="path_est"    default="/tmp/traj_estimate.txt" />
-    <arg name="path_time"   default="/tmp/traj_timing.txt" />
+    <arg name="dosave"      default="true" />
+    <arg name="dotime"      default="true" />
+    <arg name="path_est"    default="/home/gzh/PX4/open_vins_ws/trajectory_save/traj_estimate.txt" />
+    <arg name="path_time"   default="/home/gzh/PX4/open_vins_ws/trajectory_save/traj_timing.txt" />
 
     <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find ov_msckf)/launch/display_gazebo.rviz" />
 
@@ -24,6 +24,7 @@
           args="0 0 0 0 0 0 fcu base_link 100"/>
     <node pkg="tf" type="static_transform_publisher" name="tf_depth_camera"
           args="0.1 0 0 -1.57 0 -1.57 base_link camera_link 100"/>
+    
     <!-- MASTER NODE! -->
     <node name="run_subscribe_msckf" pkg="ov_msckf" type="run_subscribe_msckf" output="screen" clear_params="true" required="true">
 
@@ -72,7 +73,7 @@
         <param name="grid_y"             type="int"    value="3" />
         <param name="min_px_dist"        type="int"    value="10" />
         <param name="knn_ratio"          type="double" value="0.70" />
-        <param name="downsample_cameras" type="bool"   value="false" />
+        <param name="downsample_cameras" type="bool"   value="true" />
 
         <!-- aruco tag/mapping properties -->
         <param name="use_aruco"        type="bool"   value="false" />
@@ -124,8 +125,8 @@
 
 
     <!-- play the dataset
-    <node pkg="rosbag" type="play" name="rosbag" args="-d 1 -s $(arg bag_start) $(arg bag)" required="true"/>
--->
+    <node pkg="rosbag" type="play" name="rosbag" args="-d 1 -s $(arg bag_start) $(arg bag)" required="true"/> -->
+   
     <!-- record the trajectory if enabled -->
     <group if="$(arg dosave)">
         <node name="recorder_estimate" pkg="ov_eval" type="pose_to_file" output="screen" required="true">
