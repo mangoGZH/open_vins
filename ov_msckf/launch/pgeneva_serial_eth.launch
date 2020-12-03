@@ -11,7 +11,8 @@
         <param name="topic_camera1"  type="string" value="/cam1/image_raw" />
 
         <!-- bag parameters -->
-        <param name="path_bag"    type="string" value="/home/gzh/datasets/EuRoc/V1_01_easy.bag" />
+<!--        <param name="path_bag"    type="string" value="/home/gzh/datasets/EuRoc/V1_01_easy.bag" />-->
+        <param name="path_bag"    type="string" value="/home/gzh/datasets/EuRoc/MH_01_easy.bag" />
 <!--        <param name="path_gt"     type="string" value="$(find ov_data)/euroc_mav/V1_01_easy.csv" />-->
 <!--        <param name="path_bag"    type="string" value="/home/patrick/datasets/eth/V2_03_difficult.bag" />-->
 <!--        <param name="path_gt"     type="string" value="$(find ov_data)/euroc_mav/V2_03_difficult.csv" />-->
