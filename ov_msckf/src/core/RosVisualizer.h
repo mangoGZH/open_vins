@@ -120,6 +120,7 @@ namespace ov_msckf {
         Simulator* _sim;
 
         // Our publishers
+        ros::Publisher pub_pose_vision;
         ros::Publisher pub_poseimu, pub_odomimu, pub_pathimu;
         ros::Publisher pub_points_msckf, pub_points_slam, pub_points_aruco, pub_points_sim;
         ros::Publisher pub_tracks;

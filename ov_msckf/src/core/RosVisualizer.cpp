@@ -32,6 +32,8 @@ RosVisualizer::RosVisualizer(ros::NodeHandle &nh, VioManager* app, Simulator *si
     mTfBr = new tf::TransformBroadcaster();
 
     // Setup pose and path publisher
+    pub_pose_vision = nh.advertise<geometry_msgs::PoseStamped>("/mavros/vision_pose/pose", 2);
+    ROS_INFO("Publishing: %s", pub_pose_vision.getTopic().c_str());
     pub_poseimu = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/ov_msckf/poseimu", 2);
     ROS_INFO("Publishing: %s", pub_poseimu.getTopic().c_str());
     pub_odomimu = nh.advertise<nav_msgs::Odometry>("/ov_msckf/odomimu", 2);
@@ -313,6 +315,7 @@ void RosVisualizer::publish_state() {
     pub_poseimu.publish(poseIinM);
 
 
+
     //=========================================================
     //=========================================================
 
@@ -321,6 +324,8 @@ void RosVisualizer::publish_state() {
     posetemp.header = poseIinM.header;
     posetemp.pose = poseIinM.pose.pose;
     poses_imu.push_back(posetemp);
+
+    pub_pose_vision.publish(posetemp);
 
     // Create our path (imu)
     // NOTE: We downsample the number of poses as needed to prevent rviz crashes
