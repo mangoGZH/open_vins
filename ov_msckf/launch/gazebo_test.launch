@@ -4,7 +4,7 @@
     <arg name="max_cameras" default="1" />
     <arg name="use_stereo"  default="false" />
     <arg name="bag_start"   default="0" /> <!-- v1-2: 0, mh1: 40, mh2: 35, mh3-5: 20 -->
-    <arg name="bag"         default="/home/ray/Bag/open_vins/V1_01_easy.bag" />
+    <arg name="bag"         default=" " />
 
     <!-- imu starting thresholds -->
     <arg name="init_window_time"  default="0.75" />
@@ -13,7 +13,7 @@
     <!-- saving trajectory path and timing information -->
     <arg name="dosave"      default="true" />
     <arg name="dotime"      default="true" />
-    <arg name="path_est"    default="/home/gzh/PX4/open_vins_ws/trajectory_save/traj_estimate.txt" />
+    <arg name="path_est"    default="/home/gzh/PX4/open_vins_ws/trajectory_save/gazebo_traj_est.txt" />
     <arg name="path_time"   default="/home/gzh/PX4/open_vins_ws/trajectory_save/traj_timing.txt" />
 
     <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find ov_msckf)/launch/display_gazebo.rviz" />
@@ -130,11 +130,16 @@
     <!-- record the trajectory if enabled -->
     <group if="$(arg dosave)">
         <node name="recorder_estimate" pkg="ov_eval" type="pose_to_file" output="screen" required="true">
-            <param name="topic"      type="str" value="/ov_msckf/poseimu" />
-            <param name="topic_type" type="str" value="PoseWithCovarianceStamped" />
-            <param name="output"     type="str" value="$(arg path_est)" />
+            <param name="topic"      type="str" value="/mavros/vision_pose/pose" />
+            <param name="topic_type" type="str" value="PoseStamped" />
+            <param name="output"     type="str" value="/home/gzh/PX4/open_vins_ws/trajectory_save/gazebo_vio4traj_est.txt" />
+        </node>
+        <!-- record the px4-ekf2 trajectory if enabled -->
+        <node name="recorder_px4_estimate" pkg="ov_eval" type="pose_to_file" output="screen" required="true">
+            <param name="topic"      type="str" value="/mavros/local_position/pose" />
+            <param name="topic_type" type="str" value="PoseStamped" />
+            <param name="output"     type="str" value="/home/gzh/PX4/open_vins_ws/trajectory_save/gazebo_px4traj_est.txt" />
         </node>
     </group>
-
 
 </launch>
