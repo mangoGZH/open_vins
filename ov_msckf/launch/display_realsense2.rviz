@@ -3,7 +3,11 @@ Panels:
     Help Height: 0
     Name: Displays
     Property Tree Widget:
-      Expanded: ~
+      Expanded:
+        - /Global Options1
+        - /Status1
+        - /Odometry1
+        - /Odometry1/Status1
       Splitter Ratio: 0.600000024
     Tree Height: 313
   - Class: rviz/Selection
@@ -47,47 +51,6 @@ Visualization Manager:
       Plane: XY
       Plane Cell Count: 80
       Reference Frame: <Fixed Frame>
-      Value: true
-    - Class: rviz/TF
-      Enabled: true
-      Frame Timeout: 999
-      Frames:
-        All Enabled: true
-        cam0:
-          Value: true
-        camera_accel_frame:
-          Value: true
-        camera_accel_optical_frame:
-          Value: true
-        camera_color_frame:
-          Value: true
-        camera_color_optical_frame:
-          Value: true
-        camera_depth_frame:
-          Value: true
-        camera_depth_optical_frame:
-          Value: true
-        camera_gyro_frame:
-          Value: true
-        camera_imu_optical_frame:
-          Value: true
-        camera_link:
-          Value: true
-        global:
-          Value: true
-        imu:
-          Value: true
-      Marker Scale: 1
-      Name: TF
-      Show Arrows: false
-      Show Axes: true
-      Show Names: true
-      Tree:
-        global:
-          imu:
-            cam0:
-              {}
-      Update Interval: 0
       Value: true
     - Class: rviz/Image
       Enabled: true
@@ -297,6 +260,40 @@ Visualization Manager:
       Topic: /ov_msckf/poseimu
       Unreliable: false
       Value: true
+    - Angle Tolerance: 0.100000001
+      Class: rviz/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.300000012
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
+      Enabled: true
+      Keep: 100
+      Name: Odometry
+      Position Tolerance: 0.100000001
+      Shape:
+        Alpha: 1
+        Axes Length: 1
+        Axes Radius: 0.100000001
+        Color: 255; 25; 0
+        Head Length: 0.300000012
+        Head Radius: 0.100000001
+        Shaft Length: 1
+        Shaft Radius: 0.0500000007
+        Value: Arrow
+      Topic: /mavros/local_position/odom
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 44; 44; 44
@@ -322,25 +319,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 5.98647976
+      Distance: 387.995972
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.01726151
-        Y: -1.18048394
-        Z: -0.00688001188
+        X: 0.789657831
+        Y: -1.06487739
+        Z: -0.589597225
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.489796937
+      Pitch: 0.384796977
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.19039154
+      Yaw: 2.28039074
     Saved: ~
 Window Geometry:
   Displays:
@@ -360,5 +357,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1342
-  X: 63
-  Y: 24
+  X: 155
+  Y: 80

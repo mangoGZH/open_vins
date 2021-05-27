@@ -3,20 +3,16 @@
     <!-- mono or stereo and what ros bag to play -->
     <arg name="max_cameras" default="1" />
     <arg name="use_stereo"  default="false" />
-    <arg name="bag_start"   default="40" /> <!-- v1-2: 0, mh1: 40, mh2: 35, mh3-5: 20 -->
-    <arg name="bag_name"    default="/media/gzh/gzh-space/bag/EuRoc/MH_01_easy.bag"  />
-                               <!--"/home/gzh/datasets/EuRoc/MH_03_medium.bag" /> --> 
-                               <!--/MH_01_easy.bag ,MH_02_easy.bag,MH_03_medium.bag  V1_01_easy.bag/> -->
 
     <!-- imu starting thresholds -->
     <arg name="init_window_time"  default="0.75" />
-    <arg name="init_imu_thresh"   default="1.5" />
+    <arg name="init_imu_thresh"   default="1.0" />
 
     <!-- saving trajectory path and timing information -->
     <arg name="dosave"      default="true" />
     <arg name="dotime"      default="false" />
-    <arg name="path_est"    default="/home/gzh/compare_test/ov_euroc_traj.txt" />
-    <arg name="path_time"   default="/home/gzh/compare_test/traj_time.txt" />
+    <arg name="path_est"    default="/home/gzh/compare_test/ov_rs_traj.txt" />
+    <arg name="path_time"   default="/home/gzh/compare_test/rs_traj_time.txt" />
 
     <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find ov_msckf)/launch/display.rviz" />
 
@@ -24,9 +20,9 @@
     <node name="run_subscribe_msckf" pkg="ov_msckf" type="run_subscribe_msckf" output="screen" clear_params="true" required="true">
 
         <!-- bag topics -->
-        <param name="topic_imu"      type="string" value="/imu0" />
-        <param name="topic_camera0"  type="string" value="/cam0/image_raw" />
-        <param name="topic_camera1"  type="string" value="/cam1/image_raw" />
+        <param name="topic_imu"      type="string" value="/camera/imu" />
+        <param name="topic_camera0"  type="string" value="/camera/color/image_raw" />
+       
        
         <!-- world/filter parameters -->
         <param name="use_fej"                type="bool"   value="true" />
@@ -45,7 +41,7 @@
         <param name="dt_slam_delay"          type="double" value="3" />
         <param name="init_window_time"       type="double" value="$(arg init_window_time)" />
         <param name="init_imu_thresh"        type="double" value="$(arg init_imu_thresh)" />
-        <rosparam param="gravity">[0.0,0.0,9.81]</rosparam>
+        <rosparam param="gravity">[0.0,0.0,9.805]</rosparam>
         <param name="feat_rep_msckf"         type="string" value="GLOBAL_3D" />
         <param name="feat_rep_slam"          type="string" value="ANCHORED_FULL_INVERSE_DEPTH" />
         <param name="feat_rep_aruco"         type="string" value="ANCHORED_FULL_INVERSE_DEPTH" />
@@ -82,35 +78,25 @@
         <param name="up_slam_chi2_multipler"       type="double"   value="1" />
         <param name="up_aruco_sigma_px"            type="double"   value="1" />
         <param name="up_aruco_chi2_multipler"      type="double"   value="1" />
-        <param name="gyroscope_noise_density"      type="double"   value="1.6968e-04" />
-        <param name="gyroscope_random_walk"        type="double"   value="1.9393e-05" />
-        <param name="accelerometer_noise_density"  type="double"   value="2.0000e-3" />
-        <param name="accelerometer_random_walk"    type="double"   value="3.0000e-3" />
+        <param name="gyroscope_noise_density"      type="double"   value="2.35e-03" />
+        <param name="gyroscope_random_walk"        type="double"   value="1.54e-05" />
+        <param name="accelerometer_noise_density"  type="double"   value="2.33e-02" />
+        <param name="accelerometer_random_walk"    type="double"   value="3.70e-04" />
 
         <!-- camera intrinsics -->
-        <rosparam param="cam0_wh">[752, 480]</rosparam>
-        <rosparam param="cam1_wh">[752, 480]</rosparam>
+        <rosparam param="cam0_wh">[640, 480]</rosparam>
+        <rosparam param="cam1_wh">[640, 480]</rosparam>
         <param name="cam0_is_fisheye" type="bool" value="false" />
         <param name="cam1_is_fisheye" type="bool" value="false" />
-        <rosparam param="cam0_k">[458.654,457.296,367.215,248.375]</rosparam>
-        <rosparam param="cam0_d">[-0.28340811,0.07395907,0.00019359,1.76187114e-05]</rosparam>
-        <rosparam param="cam1_k">[457.587,456.134,379.999,255.238]</rosparam>
-        <rosparam param="cam1_d">[-0.28368365,0.07451284,-0.00010473,-3.55590700e-05]</rosparam>
+        <rosparam param="cam0_k">[387.7816994686583, 384.93174334595477, 328.3056619358285, 248.0026548568998]</rosparam>
+        <rosparam param="cam0_d">[-0.03153627881579079, 0.023958857064638264, -0.0008448957194155123,0.007603707663951958]</rosparam>
 
         <!-- camera extrinsics -->
         <rosparam param="T_C0toI">
             [
-            0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
-            0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
-            -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
-            0.0, 0.0, 0.0, 1.0
-            ]
-        </rosparam>
-        <rosparam param="T_C1toI">
-            [
-            0.0125552670891, -0.999755099723, 0.0182237714554, -0.0198435579556,
-            0.999598781151, 0.0130119051815, 0.0251588363115, 0.0453689425024,
-            -0.0253898008918, 0.0179005838253, 0.999517347078, 0.00786212447038,
+            0.99984507, 0.00627418, 0.01644605, 0.03121365,
+            -0.00617808, 0.99996358,-0.00588756, 0.00229379
+            -0.01648239, 0.00578504, 0.99984742, 0.01323033,
             0.0, 0.0, 0.0, 1.0
             ]
         </rosparam>
@@ -120,8 +106,7 @@
 
 
     <!-- play the dataset -->
-    <node pkg="rosbag" type="play" name="rosbag" args="-d 1 -s $(arg bag_start) $(arg bag_name)" required="true"/>
-
+    
     <!-- record the trajectory if enabled -->
     <group if="$(arg dosave)">
         <node name="recorder_estimate" pkg="ov_eval" type="pose_to_file" output="screen" required="true">
